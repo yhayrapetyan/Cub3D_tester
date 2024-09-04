@@ -45,7 +45,7 @@ esac
 
 printf ${BLUE}"\n-------------------------------------------------------------\n"${DEF_COLOR};
 printf ${YELLOW}"\n\t\tTEST CREATED BY: "${DEF_COLOR};
-printf ${CYAN}"Me :)\t\n"${DEF_COLOR};
+printf ${CYAN}"yuhayrap :)\t\n"${DEF_COLOR};
 printf ${BLUE}"\n-------------------------------------------------------------\n"${DEF_COLOR};
 
 make -C "$PWD/../" re
