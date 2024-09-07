@@ -35,12 +35,25 @@ case $action in
         exit 0
         ;;
     default)
-        ;;
-    *)
-        printf "${RED}Unknown action: ${YELLOW}$action\n${DEF_COLOR}"
-        printf "${BLUE}Valid actions: ${GREEN}clean\n${DEF_COLOR}"
-        exit 1
-        ;;
+            ;;
+        *)
+            # Check if $action is a valid subdirectory
+            subdirs=$(ls -d "$INVALID_MAPS"/* 2>/dev/null)
+            folder_found=false
+            for subdir in $subdirs; do
+                if [ "$(basename "$subdir")" == "$action" ]; then
+                    folder_to_test="$action"
+                    folder_found=true
+                    break
+                fi
+            done
+            if [ "$folder_found" = false ]; then
+                printf "${RED}Unknown action or folder: ${YELLOW}$action\n${DEF_COLOR}"
+                printf "${BLUE}Valid actions: ${GREEN}clean\n${DEF_COLOR}"
+                exit 1
+            fi
+            subdirs=$action
+            ;;
 esac
 
 printf ${BLUE}"\n-------------------------------------------------------------\n"${DEF_COLOR};
@@ -53,14 +66,24 @@ make -C "$PWD/../" re
 if [ -f "$PROGRAM" ]; then
 	echo -n
 else
-	printf "${RED}SO_LONG PROGRAM DOES NOT EXISTS${DEF_COLOR}\n";
+	printf "${RED} ${PROGRAM} PROGRAM DOES NOT EXIST${DEF_COLOR}\n";
 	exit 1
 fi
 
 rm -rf Test_results
 mkdir Test_results
 
-subdirs=$(ls -d "$INVALID_MAPS"/* 2>/dev/null)
+if [ -n "$folder_to_test" ]; then
+    echo fdssfd
+    subdirs="$INVALID_MAPS/$folder_to_test"
+    if [ ! -d "$subdirs" ]; then
+        printf "${RED}Error: The folder '$folder_to_test' does not exist.\n${DEF_COLOR}"
+        exit 1
+    fi
+else
+    subdirs=$(ls -d "$INVALID_MAPS"/* 2>/dev/null)
+fi
+
 for subdir in $subdirs; do
     test_number=1
     subdir_name=$(basename "$subdir")
@@ -109,7 +132,7 @@ for subdir in $subdirs; do
 done
 
 if [ "$ERRORS_COUNT" -ne 0 ]; then
-    printf "${RED}\nProgram have some errors${DEF_COLOR}\n\n";
+    printf "${RED}\nProgram has some errors${DEF_COLOR}\n\n";
 else
     printf "${GREEN}\nGood job! Everything works correctly 🥳✅${DEF_COLOR}\n\n"
 fi
