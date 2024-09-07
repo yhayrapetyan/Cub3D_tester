@@ -34,6 +34,9 @@ case $action in
         printf ${BLUE}"\n-----------------------\n\n"${DEF_COLOR};
         exit 0
         ;;
+    print)
+      to_print=1
+      ;;
     default)
             ;;
         *)
@@ -91,43 +94,59 @@ for subdir in $subdirs; do
     printf "${CYAN}                         $subdir_name\n"
     printf "${MAGENTA}-------------------------------------------------------------\n${DEF_COLOR}"
     mkdir $OUTPUT/$subdir_name
+
     for file_path in "$subdir"/*; do
         if [ -f "$file_path" ]; then
             file_name="${file_path##*/}"
             printf  "${CYAN}Test ${test_number}\n${DEF_COLOR}"
 
             if [ "$UNAME" = "Linux" ]; then
+
+                if [ -n "$to_print" ]; then
+                  valgrind --leak-check=full --show-leak-kinds=all "$PROGRAM" "$file_path"
+                fi
+
                 valgrind --leak-check=full --show-leak-kinds=all "$PROGRAM" "$file_path" > $OUTPUT/$subdir_name/$file_name 2>&1
                 leak_status=$(grep -Ec 'no leaks are possible|ERROR SUMMARY: 0' $OUTPUT/$subdir_name/$file_name)
                 segfault_status=$(grep -w '(SIGSEGV)' $OUTPUT/$subdir_name/$file_name)
-				if [[ -n $segfault_status ]]; then
-                	printf "${YELLOW} (SIGSEGV) ${DEF_COLOR}\n";
-                	((ERRORS_COUNT++))
-				else
-					if [[ $leak_status == 2 ]]; then
-						printf "${GREEN}[OK LEAKS] ${DEF_COLOR}\n\n";
-					else
-						printf "${RED} [KO LEAKS] ${DEF_COLOR}\n\n";
-						((ERRORS_COUNT++))
-					fi
-       			fi
+
+				        if [[ -n $segfault_status ]]; then
+                	  printf "${YELLOW} (SIGSEGV) ${DEF_COLOR}\n";
+                	  ((ERRORS_COUNT++))
+				        else
+				            if [[ $leak_status == 2 ]]; then
+						          printf "${GREEN}[OK LEAKS] ${DEF_COLOR}\n\n";
+					          else
+						          printf "${RED} [KO LEAKS] ${DEF_COLOR}\n\n";
+						          ((ERRORS_COUNT++))
+					          fi
+                fi
+
             else
-				"$PROGRAM" "$file_path" > $OUTPUT/$subdir_name/$file_name 2>&1
-				leak_status=$(grep -Ec "0 leaks for 0 total leaked bytes." $OUTPUT/$subdir_name/$file_name)
-				if [[ -n $segfault_status ]]; then
-                	printf "${YELLOW} (SIGSEGV) ${DEF_COLOR}\n";
-                	((ERRORS_COUNT++))
-				else
-					if [[ $leak_status == 1 ]]; then
-						printf "${GREEN}[OK LEAKS] ${DEF_COLOR}\n\n";
-					else
-						printf "${RED} [KO LEAKS] ${DEF_COLOR}\n\n";
-						((ERRORS_COUNT++))
-					fi
-       			fi
+
+                if [ -n "$to_print" ]; then
+                  "$PROGRAM" "$file_path" > $OUTPUT/$subdir_name/$file_name
+                fi
+
+                "$PROGRAM" "$file_path" > $OUTPUT/$subdir_name/$file_name 2>&1
+                leak_status=$(grep -Ec "0 leaks for 0 total leaked bytes." $OUTPUT/$subdir_name/$file_name)
+
+                if [[ -n $segfault_status ]]; then
+                    printf "${YELLOW} (SIGSEGV) ${DEF_COLOR}\n";
+                    ((ERRORS_COUNT++))
+                else
+                    if [[ $leak_status == 1 ]]; then
+                      printf "${GREEN}[OK LEAKS] ${DEF_COLOR}\n\n";
+                    else
+                      printf "${RED} [KO LEAKS] ${DEF_COLOR}\n\n";
+                      ((ERRORS_COUNT++))
+                    fi
+
+                fi
             fi
             ((test_number++))
         fi
+
     done
 done
 
